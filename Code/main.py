@@ -4,7 +4,7 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # COSCI-GAN 디렉토리로 이동
-path = '/workspace/COSCI-GAN'
+path = '/workspace/COSCI-GAN_Journal'
 try:
     os.chdir(path)
     print("Current working directory: {0}".format(os.getcwd()))

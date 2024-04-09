@@ -33,14 +33,16 @@ def COSCIGAN(n_groups,
     torch.manual_seed(0)
     
     # wandb에 실험 설정 저장 및 초기화 - 각 네트워크의 손실을 저장하기 위함
+    """
     config = {
         "gen_lr" : g_lr, "dis_lr" : d_lr,
         "CD_lr" : cd_lr, "CD_type" : CD_type,
         "G_type" : G_type, "D_type" : D_type,
         "Gamma" : gamma
     }
-    wandb.init(project='COSCI-GAN')
+    wandb.init(project='COSCI-GAN_Journal')
     wandb.config.update(config)
+    """
     
     # 결과값 저장을 위한 디렉토리 생성
     if not os.path.isdir(f'./Results/'):
@@ -202,17 +204,17 @@ def COSCIGAN(n_groups,
                 
                 ### 생성자의 손실값 저장
                 log_Dict[f'loss_G_{i}'] = loss_G[i].cpu()            
-                wandb.log({f"Generator_loss_{i}": loss_G[i]})
+                #wandb.log({f"Generator_loss_{i}": loss_G[i]})
                     
         ### 판별자 및 중앙 판별자의 손실값 저장
         for i in range(n_groups):
             log_Dict[f'loss_D_{i}'] = loss_D[i].cpu()
-            wandb.log({f"Discriminator_loss_{i}": loss_D[i]})        
+            #wandb.log({f"Discriminator_loss_{i}": loss_D[i]})        
         log_Dict['loss_CD'] = loss_CD.cpu()
-        wandb.log({"Central_Discriminator_loss": loss_CD})                                          
+        #wandb.log({"Central_Discriminator_loss": loss_CD})                                          
         
         ### 모델 결과값 저장 - 생성자의 State_dict
-        if epoch % 3 == 0:
+        if epoch % 2 == 0:
             for i in range(n_groups):
                 torch.save(generators[i].state_dict(), f'./Results/{full_name}/Generator_{i}_{epoch}.pt')
                 print(f"Save the Generator_{epoch}")                              

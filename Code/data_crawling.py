@@ -7,14 +7,16 @@ end = "2019-12-31"
 
 SP500_daily = yf.download("^GSPC", start, end)['Close']
 HANGSENG_daily = yf.download("^HSI", start, end)['Close']
-KOSPI_daily = yf.download("^KS11", start, end)['Close']
+GOLD_daily = yf.download("GC=F", start, end)['Close']
+WTI_daily = yf.download("CL=F", start, end)['Close']
 
-SP500_daily.name = 'SP500'
+SP500_daily.name = 'S&P500'
 HANGSENG_daily.name = 'HANGSENG'
-KOSPI_daily.name = 'KOSPI'
+GOLD_daily.name = 'GOLD'
+WTI_daily.name = 'WTI_OIL'
 
-# 동일한 인덱스(날짜)를 기준으로 합침
-result = pd.concat([SP500_daily, HANGSENG_daily, KOSPI_daily], axis=1, join='inner')
+# 동일한 인덱스를 기준으로 합침
+result = pd.concat([SP500_daily, HANGSENG_daily, GOLD_daily, WTI_daily], axis=1, join='inner')
 print(f"result.shape: {result.shape}")
 
-result.to_csv('./COSCI-GAN/Dataset/stocks.csv')
+result.to_csv('./COSCI-GAN_Journal/Dataset/indices.csv')
