@@ -160,11 +160,13 @@ def inverse(x, tau):
 
 def igmm(y: np.ndarray, tol: float = 1e-6, max_iter: int = 100):
     # Infer mu, sigma, delta using IGMM in Alg.2, Appendix C
+    
     if np.std(y) < _EPS:
         return np.mean(y), np.std(y).clip(_EPS), 0
     delta0 = delta_init(y)
     tau1 = (np.median(y), np.std(y) * (1. - 2. * delta0) ** 0.75, delta0)
     for k in range(max_iter):
+        print(k)
         tau0 = tau1
         z = (y - tau1[0]) / tau1[1]
         delta1 = delta_gmm(z)

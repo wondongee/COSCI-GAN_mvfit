@@ -27,13 +27,12 @@ def COSCIGAN(n_groups,
              noise_dim,
              seq_len):
 
-    full_name = f'{G_type}_{D_type}_{CD_type}_{num_epochs}_{batch_size}_gamma_{gamma}_Glr_{g_lr}_Dlr_{d_lr}_CDlr_{cd_lr}_seqlen_{seq_len}_loss_{criterion}'    
+    full_name = f'{G_type}_{D_type}_{CD_type}_{num_epochs}_{batch_size}_gamma_{gamma}_Glr_{g_lr}_Dlr_{d_lr}_CDlr_{cd_lr}_seqlen_{seq_len}_loss_{criterion}_NEW'    
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(0)
     
-    # wandb에 실험 설정 저장 및 초기화 - 각 네트워크의 손실을 저장하기 위함
-    """
+    # wandb에 실험 설정 저장 및 초기화 - 각 네트워크의 손실을 저장하기 위함    
     config = {
         "gen_lr" : g_lr, "dis_lr" : d_lr,
         "CD_lr" : cd_lr, "CD_type" : CD_type,
@@ -42,7 +41,6 @@ def COSCIGAN(n_groups,
     }
     wandb.init(project='COSCI-GAN_Journal')
     wandb.config.update(config)
-    """
     
     # 결과값 저장을 위한 디렉토리 생성
     if not os.path.isdir(f'./Results/'):
@@ -58,6 +56,7 @@ def COSCIGAN(n_groups,
     df = df.apply(pd.to_numeric).astype(float)    
     log_returns = np.diff(np.log(df), axis=0)
     log_returns_preprocessed = scaling(log_returns, n_groups)
+    
     
     # 데이터를 sequence 단위로 나누어서 학습을 위한 dataloader로 변환
     dataset = dataloader(log_returns_preprocessed, seq_len)    
@@ -78,10 +77,7 @@ def COSCIGAN(n_groups,
     optimizer_CD = torch.optim.Adam(central_discriminator.parameters(), lr=cd_lr, betas=[0.5, 0.9])
     
     if criterion == 'BCE':
-        loss_function = nn.BCELoss()
-    elif criterion == 'WGAN-GP':
-        lambda_gp = 10
-        n_critic = 5
+        loss_function = nn.BCELoss()    
         
     # 학습 진행
     for epoch in tqdm(range(num_epochs)):
@@ -114,12 +110,8 @@ def COSCIGAN(n_groups,
             outputs_D = {}
             loss_D = {}            
             for i in range(n_groups):
-                optimizers_D[i].zero_grad()                                
-                if criterion == 'WGAN-GP':                                    
-                    loss_D[i] = -torch.mean(discriminators[i](real_group[i])) + torch.mean(discriminators[i](fake_group[i]))                    
-                    gradient_penalty = compute_gradient_penalty(discriminators[i], real_group[i], fake_group[i], device)
-                    loss_D[i] += lambda_gp * gradient_penalty                    
-                elif criterion == 'BCE':                    
+                optimizers_D[i].zero_grad()                                                
+                if criterion == 'BCE':                    
                     outputs_D[i] = discriminators[i](all_group[i].float())
                     loss_D[i] = loss_function(outputs_D[i], all_labels)
                 loss_D[i].backward(retain_graph=True)
@@ -144,12 +136,8 @@ def COSCIGAN(n_groups,
                 (torch.zeros((batch_num, 1)).to(device).float(), torch.ones((batch_num, 1)).to(device).float())
             )
             
-            optimizer_CD.zero_grad()            
-            if criterion == 'WGAN-GP':
-                loss_CD = -torch.mean(central_discriminator(group_real)) + torch.mean(central_discriminator(group_generated))                
-                gradient_penalty = compute_gradient_penalty(central_discriminator, group_real, group_generated, device)
-                loss_CD += lambda_gp * gradient_penalty
-            elif criterion == 'BCE':
+            optimizer_CD.zero_grad()                        
+            if criterion == 'BCE':
                 output_CD = central_discriminator(all_samples_central.float())
                 loss_CD = loss_function(output_CD, all_samples_labels)
             loss_CD.backward(retain_graph=True)
@@ -165,13 +153,8 @@ def COSCIGAN(n_groups,
                 
                 ## Channel Discriminator로 부터 local loss 계산
                 optimizers_G[i].zero_grad()
-                outputs_G[i] = discriminators[i](fake_group[i])            
-                if criterion == 'WGAN-GP':
-                    # WGAN-GP loss를 사용할 경우 n_critic만큼 Discriminator를 학습한 후에 Generator를 학습
-                    if n % n_critic != 0:
-                        break                    
-                    loss_G_local[i] = -torch.mean(outputs_G[i])
-                elif criterion == 'BCE':
+                outputs_G[i] = discriminators[i](fake_group[i])                            
+                if criterion == 'BCE':
                     loss_G_local[i] = loss_function(outputs_G[i], real_labels)
                 
                 ## Central Discriminator로 부터 central loss 계산
@@ -191,11 +174,8 @@ def COSCIGAN(n_groups,
                 fake_all = fake_temp                
                 all_new[i] = torch.cat((fake_all, group_real))   
                 
-                ## 생성자의 total loss 계산 = local loss - gamma * central loss
-                if criterion == 'WGAN-GP':
-                    loss_CD_new[i] = central_discriminator(fake_all)                        
-                    loss_G[i] = loss_G_local[i] - gamma * torch.mean(loss_CD_new[i])                                                                    
-                elif criterion == 'BCE':
+                ## 생성자의 total loss 계산 = local loss - gamma * central loss                
+                if criterion == 'BCE':
                     output_CD_new[i] = central_discriminator(all_new[i].float()) 
                     loss_CD_new[i] = loss_function(output_CD_new[i], all_samples_labels)                    
                     loss_G[i] = loss_G_local[i] - gamma * loss_CD_new[i]                                    
@@ -204,17 +184,17 @@ def COSCIGAN(n_groups,
                 
                 ### 생성자의 손실값 저장
                 log_Dict[f'loss_G_{i}'] = loss_G[i].cpu()            
-                #wandb.log({f"Generator_loss_{i}": loss_G[i]})
+                wandb.log({f"Generator_loss_{i}": loss_G[i]})
                     
         ### 판별자 및 중앙 판별자의 손실값 저장
         for i in range(n_groups):
             log_Dict[f'loss_D_{i}'] = loss_D[i].cpu()
-            #wandb.log({f"Discriminator_loss_{i}": loss_D[i]})        
+            wandb.log({f"Discriminator_loss_{i}": loss_D[i]})        
         log_Dict['loss_CD'] = loss_CD.cpu()
-        #wandb.log({"Central_Discriminator_loss": loss_CD})                                          
+        wandb.log({"Central_Discriminator_loss": loss_CD})                                          
         
         ### 모델 결과값 저장 - 생성자의 State_dict
-        if epoch % 2 == 0:
+        if epoch % 5 == 0:
             for i in range(n_groups):
                 torch.save(generators[i].state_dict(), f'./Results/{full_name}/Generator_{i}_{epoch}.pt')
                 print(f"Save the Generator_{epoch}")                              

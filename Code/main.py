@@ -1,7 +1,7 @@
 from train import COSCIGAN
 import yaml
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # COSCI-GAN 디렉토리로 이동
 path = '/workspace/COSCI-GAN_Journal'
