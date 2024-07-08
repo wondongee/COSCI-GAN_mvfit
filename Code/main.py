@@ -1,7 +1,7 @@
 from train import COSCIGAN
 import yaml
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # COSCI-GAN 디렉토리로 이동
 path = '/workspace/COSCI-GAN_Journal'
@@ -30,5 +30,5 @@ COSCIGAN(n_groups=config['Ngroups'],
          cd_lr=config['cdlr'],
          gamma=config['gamma'],
          noise_dim=config['noise_dim'],
-         seq_len=config['seq_len'],
+         seq_len=config['seq_len']         
         )

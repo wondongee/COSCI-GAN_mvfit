@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "/workspace/COSCI-GAN/Code/main.py", line 19, in <module>
-    COSCIGAN(n_groups=config['Ngroups'],
-  File "/workspace/COSCI-GAN/Code/train.py", line 36, in COSCIGAN
-    os.mkdir(f'./Results/{full_name}/')
-FileNotFoundError: [Errno 2] No such file or directory: './Results/TCN_TCN_MLP_400_64_gamma_5.0_Glr_0.0001_Dlr_0.0001_CDlr_1e-05_seqlen_127_loss_WGAN-GP/'

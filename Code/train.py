@@ -25,13 +25,8 @@ def COSCIGAN(n_groups,
              cd_lr,
              gamma,
              noise_dim,
-             seq_len):
-
-    full_name = f'{G_type}_{D_type}_{CD_type}_{num_epochs}_{batch_size}_gamma_{gamma}_Glr_{g_lr}_Dlr_{d_lr}_CDlr_{cd_lr}_seqlen_{seq_len}_loss_{criterion}_NEW'    
-    
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    torch.manual_seed(0)
-    
+             seq_len,
+             ):
     # wandb에 실험 설정 저장 및 초기화 - 각 네트워크의 손실을 저장하기 위함    
     config = {
         "gen_lr" : g_lr, "dis_lr" : d_lr,
@@ -42,6 +37,11 @@ def COSCIGAN(n_groups,
     wandb.init(project='COSCI-GAN_Journal')
     wandb.config.update(config)
     
+    full_name = f'{G_type}_{D_type}_{CD_type}_{num_epochs}_{batch_size}_gamma_{gamma}_Glr_{g_lr}_Dlr_{d_lr}_CDlr_{cd_lr}_seqlen_{seq_len}_loss_{criterion}_{wandb.run.name}'    
+    
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    torch.manual_seed(0)
+           
     # 결과값 저장을 위한 디렉토리 생성
     if not os.path.isdir(f'./Results/'):
         os.mkdir(f'./Results/')
@@ -56,7 +56,6 @@ def COSCIGAN(n_groups,
     df = df.apply(pd.to_numeric).astype(float)    
     log_returns = np.diff(np.log(df), axis=0)
     log_returns_preprocessed = scaling(log_returns, n_groups)
-    
     
     # 데이터를 sequence 단위로 나누어서 학습을 위한 dataloader로 변환
     dataset = dataloader(log_returns_preprocessed, seq_len)    
