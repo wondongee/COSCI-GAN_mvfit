@@ -1,6 +1,6 @@
 Ngroups: 5              # channel GANs의 수, 학습시킬 자산의 수
 dataset: "indices"       # 입력 데이터 파일
-nepochs: 500            # 학습시킬 epoch 수
+nepochs: 400            # 학습시킬 epoch 수
 batch_size: 128          
 nsamples: 1             # 각 channel GANs에 입력할 차원의 수 - 각 자산의 종가만 이용하므로 1
 criterion: "BCE"        # 손실 함수의 종류 - {BCE, WGAN-GP}
@@ -12,4 +12,4 @@ dlr: 0.0005             # 판별자의 학습률
 cdlr: 0.0001           # 중앙 판별자의 학습률
 gamma: 5.0              # 중앙 판별자의 손실 함수의 가중치 - 생성자에게 전달할 자산 간 상관관계 정보의 영향력을 조정함
 noise_dim: 3            # 생성자에 입력할 노이즈의 차원 수
-seq_len: 36            # 입력 데이터의 시퀀스 길이 - {LSTM:48, TCN:127}
+seq_len: 360            # 입력 데이터의 시퀀스 길이 - {LSTM:48, TCN:127}

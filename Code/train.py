@@ -193,7 +193,7 @@ def COSCIGAN(n_groups,
         wandb.log({"Central_Discriminator_loss": loss_CD})                                          
         
         ### 모델 결과값 저장 - 생성자의 State_dict
-        if epoch % 5 == 0:
+        if epoch % 2 == 0:
             for i in range(n_groups):
                 torch.save(generators[i].state_dict(), f'./Results/{full_name}/Generator_{i}_{epoch}.pt')
                 print(f"Save the Generator_{epoch}")                              

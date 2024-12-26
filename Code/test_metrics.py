@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from scipy.stats import entropy, wasserstein_distance, ks_2samp, spearmanr, kendalltau
 from statsmodels.tsa.stattools import acf
 from scipy.spatial.distance import jensenshannon
+from scipy.stats import skew, kurtosis
+
 
 def rolling_window(time_series, window_length):
     """
@@ -109,6 +111,9 @@ def calculate_distribution_scores(real, fake, num_G, windows):
     for metric, data in scores.items():
         data = np.round(data, decimals=4)
         df_scores[metric] = pd.DataFrame(data.T, index=windows, columns=[f'{metric} {i}' for i in range(num_G)])
+        
+    emd_avg = np.mean(scores['EMD'], axis=0)
+    df_scores['EMD']['EMD_avg'] = np.round(emd_avg, decimals=4)
     
     return df_scores
 
@@ -150,7 +155,7 @@ def calculate_mae_mean(A, B_array):
 
 
 
-def plot_acf_comparison(real_list, fake_list, num_G, lags=40):    
+def plot_acf_comparison(real_list, fake_list, num_G, lags=50):    
     data_types = ['Identity', 'Absolute', 'Squared']
     data_transforms = [lambda x: x, np.abs, np.square]  # Identity 변환 추가
     titles = ['Identity log returns', 'Absolute log returns', 'Squared log returns']
@@ -190,7 +195,7 @@ def plot_acf_comparison(real_list, fake_list, num_G, lags=40):
 
         plt.show()
         
-def calculate_acf_score(real_list, fake_list, lags=30):
+def calculate_acf_score(real_list, fake_list, lags=50):
     data_transforms = [lambda x: x, np.abs, np.square]  # Identity 변환 추가
     titles = ['Identity log returns', 'Absolute log returns', 'Squared log returns']
     acf_scores = {}
@@ -215,4 +220,61 @@ def calculate_acf_score(real_list, fake_list, lags=30):
         acf_scores[f'Group {i+1}'] = group_scores
     
     return acf_scores
+
+def calculate_skew_kurt_diff(fake_list, real_list):
+    results = []
+    
+    for asset_idx in range(len(real_list)):
+        fake_data = fake_list[asset_idx]
+        real_data = real_list[asset_idx]
+
+        # 각 샘플에 대해 skewness와 kurtosis를 계산하고 평균을 구합니다.
+        fake_skewness = np.mean([skew(sample) for sample in fake_data])
+        fake_kurtosis = np.mean([kurtosis(sample, fisher=False) for sample in fake_data])
+
+        real_skewness = np.mean([skew(sample) for sample in real_data])
+        real_kurtosis = np.mean([kurtosis(sample, fisher=False) for sample in real_data])
+
+        # skewness와 kurtosis의 차이 계산
+        skewness_diff = np.abs(real_skewness - fake_skewness)
+        kurtosis_diff = np.abs(real_kurtosis - fake_kurtosis)
+
+        # 소수점 자릿수 제한
+        skewness_diff = round(skewness_diff, 4)
+        kurtosis_diff = round(kurtosis_diff, 4)
+
+        results.append((skewness_diff, kurtosis_diff))
+
+        print(f'Asset {asset_idx + 1} Skewness Difference: {skewness_diff}')
+        print(f'Asset {asset_idx + 1} Kurtosis Difference: {kurtosis_diff}')
+    
+    return results
+
+
+def calculate_leverage_effect(real_list, fake_list, lags=50):
+    def leverage_effect(ts, tau):
+        rt = ts[:-tau]  # rt: 시계열에서 뒤에서 tau만큼 제외한 것
+        rt_squared = (ts[tau:]**2)  # rt_tau_squared: 시계열에서 앞에서 tau만큼 제외하고 제곱한 것
+        return np.corrcoef(rt, rt_squared)[0, 1]
+
+    n_groups = len(real_list)
+    leverage_scores = {}
+
+    for i in range(n_groups):
+        real_data = real_list[i]
+        fake_data = fake_list[i]
+
+        real_leverage_effects = np.array([[leverage_effect(ts, tau) for tau in range(1, lags+1)] for ts in real_data])
+        fake_leverage_effects = np.array([[leverage_effect(ts, tau) for tau in range(1, lags+1)] for ts in fake_data])
+
+        mean_real_leverage = np.mean(real_leverage_effects, axis=0)
+        mean_fake_leverage = np.mean(fake_leverage_effects, axis=0)
         
+        leverage_score = np.linalg.norm(mean_real_leverage - mean_fake_leverage)
+        
+        leverage_scores[f'Group {i+1}'] = np.round(leverage_score, decimals=4)
+        
+        # Print the result for the current group
+        print(f'Group {i+1} leverage score: {leverage_scores[f"Group {i+1}"]}')
+
+    return leverage_scores
